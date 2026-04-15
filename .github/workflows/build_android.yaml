@@ -1,0 +1,79 @@
+name: Build Mars xlog for Android
+
+on:
+  push:
+    branches:
+      - build
+    tags:
+      - '*'          # 匹配所有 tag，你也可以改成更严格的模式如 'v*'
+
+env:
+  NDK_DIR: ${{ github.workspace }}/android-ndk-r27d
+  OUTPUT_ZIP: mars_xlog_android_ndk27_16k.zip
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # 为 release 准备写权限（tag 触发时需要）
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository (build branch or tag)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}   # 自动检出触发的分支或 tag
+
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y git python3 make cmake unzip wget
+
+      - name: Download and setup Android NDK r27d
+        run: |
+          wget https://dl.google.com/android/repository/android-ndk-r27d-linux.zip
+          unzip android-ndk-r27d-linux.zip -d ${{ github.workspace }}
+          rm android-ndk-r27d-linux.zip
+          echo "NDK_ROOT=${{ env.NDK_DIR }}" >> $GITHUB_ENV
+          echo "${{ env.NDK_DIR }}" >> $GITHUB_PATH
+
+      - name: Verify build_android.py exists
+        run: |
+          if [ ! -f "mars/build_android.py" ]; then
+            echo "Error: mars/build_android.py not found."
+            exit 1
+          fi
+
+      - name: Compile xlog (option 3)
+        working-directory: mars
+        run: echo "3" | python3 build_android.py
+
+      - name: Prepare output directories
+        run: |
+          mkdir -p output/jniLibs output/java
+          cp -r mars/libraries/mars_xlog_sdk/libs/* output/jniLibs/
+          cp -r mars/libraries/mars_xlog_sdk/src/main/java/* output/java/
+          if [ -f "mars/LICENSE" ]; then
+            cp mars/LICENSE output/
+          elif [ -f "LICENSE" ]; then
+            cp LICENSE output/
+          fi
+          cd output && zip -r ../${{ env.OUTPUT_ZIP }} . && cd ..
+
+      # 1. 如果是 build 分支推送，上传 Artifact（临时保存）
+      - name: Upload Artifact (for build branch)
+        if: github.ref_name == 'build' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mars-xlog-android-ndk27-16k
+          path: ${{ env.OUTPUT_ZIP }}
+          retention-days: 1
+
+      # 2. 如果是 Tag 推送，创建 Release 并上传附件（永久）
+      - name: Create Release and Upload Asset (for tags)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.OUTPUT_ZIP }}
+          generate_release_notes: true
+          # 如果你不想自动生成说明，可以删除上一行，并手动指定 body

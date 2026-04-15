@@ -31,34 +31,38 @@ except KeyError as identifier:
 
 BUILD_OUT_PATH = 'cmake_build/Android'
 ANDROID_LIBS_INSTALL_PATH = BUILD_OUT_PATH + '/'
+
 ANDROID_BUILD_CMD = 'cmake "%s" %s -DANDROID_ABI="%s" ' \
-                    '-DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=%s/build/cmake/android.toolchain.cmake ' \
-                    '-DANDROID_TOOLCHAIN=clang -DANDROID_NDK=%s ' \
-                    '-DANDROID_PLATFORM=android-21 ' \
+                    '-DCMAKE_BUILD_TYPE=Release ' \
+                    '-DCMAKE_TOOLCHAIN_FILE=%s/build/cmake/android.toolchain.cmake ' \
+                    '-DANDROID_NDK=%s -DANDROID_PLATFORM=android-21 ' \
                     '-DANDROID_STL="c++_shared" ' \
+                    '-DCMAKE_CXX_FLAGS="-w" ' \
+                    '-DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,--undefined-version" ' \
                     '&& cmake --build . %s --config Release -- -j8'
+
 ANDROID_SYMBOL_PATH = 'libraries/mars_android_sdk/obj/local/'
 ANDROID_LIBS_PATH = 'libraries/mars_android_sdk/libs/'
 ANDROID_XLOG_SYMBOL_PATH = 'libraries/mars_xlog_sdk/obj/local/'
 ANDROID_XLOG_LIBS_PATH = 'libraries/mars_xlog_sdk/libs/'
 
 
+# 修改为NDK27的地址 
 ANDROID_STRIP_FILE = {
-        'armeabi': NDK_ROOT + '/toolchains/arm-linux-androideabi-4.9/prebuilt/%s/bin/arm-linux-androideabi-strip',
-        'armeabi-v7a': NDK_ROOT + '/toolchains/arm-linux-androideabi-4.9/prebuilt/%s/bin/arm-linux-androideabi-strip',
-        'x86': NDK_ROOT + '/toolchains/x86-4.9/prebuilt/%s/bin/i686-linux-android-strip',
-        'arm64-v8a': NDK_ROOT + '/toolchains/aarch64-linux-android-4.9/prebuilt/%s/bin/aarch64-linux-android-strip',
-        'x86_64': NDK_ROOT + '/toolchains/x86_64-4.9/prebuilt/%s/bin/x86_64-linux-android-strip',
-         }
+    'armeabi': NDK_ROOT + '/toolchains/llvm/prebuilt/%s/bin/llvm-strip',
+    'armeabi-v7a': NDK_ROOT + '/toolchains/llvm/prebuilt/%s/bin/llvm-strip',
+    'x86': NDK_ROOT + '/toolchains/llvm/prebuilt/%s/bin/llvm-strip',
+    'arm64-v8a': NDK_ROOT + '/toolchains/llvm/prebuilt/%s/bin/llvm-strip',
+    'x86_64': NDK_ROOT + '/toolchains/llvm/prebuilt/%s/bin/llvm-strip',
+}
 
-
+# 修改为ndk27的地址， 固定为linux-x86_64， 如果使用不同的系统需要修改，
 ANDROID_STL_FILE = {
-        'armeabi': NDK_ROOT + '/sources/cxx-stl/llvm-libc++/libs/armeabi/libc++_shared.so',
-        'armeabi-v7a': NDK_ROOT + '/sources/cxx-stl/llvm-libc++/libs/armeabi-v7a/libc++_shared.so',
-        'x86': NDK_ROOT + '/sources/cxx-stl/llvm-libc++/libs/x86/libc++_shared.so',
-        'arm64-v8a': NDK_ROOT + '/sources/cxx-stl/llvm-libc++/libs/arm64-v8a/libc++_shared.so',
-        'x86_64': NDK_ROOT + '/sources/cxx-stl/llvm-libc++/libs/x86_64/libc++_shared.so',
-        }
+    'armeabi-v7a': NDK_ROOT + '/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/arm-linux-androideabi/libc++_shared.so',
+    'arm64-v8a': NDK_ROOT + '/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so',
+    'x86': NDK_ROOT + '/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/i686-linux-android/libc++_shared.so',
+    'x86_64': NDK_ROOT + '/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so',
+}
 
 
 def get_android_strip_cmd(arch):
